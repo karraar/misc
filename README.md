@@ -3,6 +3,8 @@
 ### Pairs that Add up to sum in array
 ```python
 def printPairsThatAddUpTo(arr, target_sum):
+    if len(arr) < 2:
+        return
     for index, curr_element in enumerate(arr):
         need = target_sum - curr_element
         if need in arr[index+1:]:   #Only look after current position
