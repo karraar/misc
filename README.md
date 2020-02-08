@@ -1,6 +1,18 @@
-# misc-python
-## Puzzles
+## Misc Excercises
 ### Pairs that Add up to sum in array
+```scala
+  def printPairsThatAddUpTo(seq: Seq[Int], target_sum: Int): Unit = {
+    def checkRest(elem: Int, rest: Seq[Int]): Unit = {
+      if (rest.length < 2) return
+      val need = target_sum - elem
+      if (rest.contains(need)) println(s"$elem and $need")
+      else checkRest(rest.head, rest.tail)
+    }
+
+    checkRest(seq.head, seq.tail)
+  }
+  printPairsThatAddUpTo(Seq(1,3,5,9),6)
+```
 ```python
 def printPairsThatAddUpTo(arr, target_sum):
     if len(arr) < 2:
