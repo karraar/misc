@@ -2,23 +2,23 @@
 ## Pairs that Add up to sum in array
 ### Scala
 ```scala
-def printPairsThatAddUpTo(seq: Seq[Int], target_sum: Int): Unit = {
+  def printPairsThatAddUpTo(seq: Seq[Int], target_sum: Int): Unit = {
+    @scala.annotation.tailrec
     def checkNextElem(elem: Int, rest: Seq[Int]): Unit = {
-        rest.length match {
-            case l if l<1 => println("No pair found.")
-            case _ => {
-                val need = target_sum - elem
-                rest.contains(need) match {
-                    case true => println(s"$elem and $need")
-                    case _ => checkNextElem(rest.head, rest.tail)
-                }
-            }
-        }
+      rest.length match {
+        case l if l<1 => println("No pair found.")  // no more elements
+        case _ =>
+          val need = target_sum - elem
+          if (rest.contains(need))
+            println(s"$elem and $need")
+          else
+            checkNextElem(rest.head, rest.tail)
+      }
     }
 
     checkNextElem(seq.head, seq.tail)
-}
-  printPairsThatAddUpTo(Seq(1,3,5,9),6)
+  }
+  printPairsThatAddUpTo(Seq(1,3,5,9),12)
 ```
 ### Python3
 ```python3
