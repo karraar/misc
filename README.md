@@ -1,5 +1,5 @@
 # Misc Excercises
-## Pairs that Add up to sum in array
+## Find the pair of numbers that add up to target_sum from Array/Seq/List
 ### Scala
 ```scala
   def printPairsThatAddUpTo(seq: Seq[Int], target_sum: Int): Unit = {
