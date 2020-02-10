@@ -2,23 +2,20 @@
 ## Find the pair of numbers that add up to target_sum from Array/Seq/List
 ### Scala
 ```scala
-  def printPairsThatAddUpTo(seq: Seq[Int], target_sum: Int): Unit = {
+  def findPairsThatAddUpTo(seq: Seq[Int], target_sum: Int): String = {
     @scala.annotation.tailrec
-    def checkNextElem(elem: Int, rest: Seq[Int]): Unit = {
-      rest.length match {
-        case l if l<1 => println("No pair found.")  // no more elements
+    def checkNextElem(elem: Int, rest: Seq[Int]): String = {
+      rest.isEmpty match {
+        case true => "got to end of Seq without finding a pair."
         case _ =>
           val need = target_sum - elem
-          if (rest.contains(need))
-            println(s"$elem and $need")
-          else
-            checkNextElem(rest.head, rest.tail)
+          if (rest.contains(need)) s"Pair: $elem and $need"
+          else checkNextElem(rest.head, rest.tail)
       }
     }
-
     checkNextElem(seq.head, seq.tail)
   }
-  printPairsThatAddUpTo(Seq(1,3,5,9),12)
+  println(findPairsThatAddUpTo(Seq(1,3,5,9),4))
 ```
 ### Python3
 ```python3
