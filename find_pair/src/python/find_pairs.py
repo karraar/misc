@@ -29,13 +29,15 @@ if __name__ == "__main__":
     print("Loop:")
     loopTime = timeit.timeit(lambda: find_pairs_loop(arr, target_sum), number=1)
     print("\tExecution Time: {0:.5f}".format(loopTime))
-    # 5 and 3698918
-    # Loop Time: 0.00003
+    # Loop:
+    # Pair: 5 and 3698918
+    # Execution Time: 0.00001
 
     print()
     print("Recursive:")
     recursiveTime = timeit.timeit(lambda: find_pairs_recursively(arr, target_sum), number=1)
-    print("Execution Time: {0:.5f}".format(recursiveTime))
-    # 5 and 3698918
-    # Recursive time: 0.00001
+    print("\tExecution Time: {0:.5f}".format(recursiveTime))
+    # Recursive:
+    # Pair: 5 and 3698918
+    # Execution Time: 0.00001
 
