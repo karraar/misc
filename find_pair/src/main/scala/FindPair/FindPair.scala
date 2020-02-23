@@ -1,5 +1,6 @@
+package FindPair
 
-object FindPairs extends App {
+object FindPair extends App {
   def findPairsRecursively(seq: Seq[Int], target_sum: Int): String = {
     @scala.annotation.tailrec
     def checkNextElem(elem: Int, rest: Seq[Int]): String = {
@@ -26,7 +27,7 @@ object FindPairs extends App {
     val startTime = System.nanoTime
     println(s"\t${f(s,i)}")
     val micros = (System.nanoTime - startTime) / 1000
-    println(f"\tExecution Took: ${micros}%,d MicroSeconds")
+    println(f"\tExecution Took: $micros%,d MicroSeconds")
   }
 
   val seq = 1 to 50000000 by 5
