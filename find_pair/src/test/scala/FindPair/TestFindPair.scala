@@ -1,9 +1,9 @@
 package FindPair
 
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class TestFindPair extends FunSuite {
+class TestFindPair extends AnyFunSuite {
     test("should pass") {
       assert(1==1)
     }
