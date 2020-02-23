@@ -23,18 +23,22 @@ object FindPairs extends App {
   }
 
   def measureCall(f: (Seq[Int],Int) => String, s: Seq[Int], i: Int): Unit = {
-    val recursiveStartTime = System.nanoTime
-    println(f(s,i))
-    val recursiveTime = (System.nanoTime - recursiveStartTime) / 1000
-    println(f"Execution Took: ${recursiveTime}%,d MicroSeconds")
+    val startTime = System.nanoTime
+    println(s"\t${f(s,i)}")
+    val micros = (System.nanoTime - startTime) / 1000
+    println(f"\tExecution Took: ${micros}%,d MicroSeconds")
   }
 
   val seq = 1 to 50000000 by 5
   val target_sum = 347332
+  println("Recursive:")
   measureCall(findPairsRecursively, seq, target_sum)
-//  Pair: 1 and 347331
-//  Execution Took: 68 MicroSeconds
+//  Recursive:
+//    Pair: 1 and 347331
+//  Execution Took: 868 MicroSeconds
+  println("Loop:")
   measureCall(findPairsInLoop, seq, target_sum)
-//  Pair: 1 and 347331
-//  Execution Took: 317 MicroSeconds
+//  Loop:
+//    Pair: 1 and 347331
+//  Execution Took: 2,336 MicroSeconds
 }
