@@ -3,5 +3,6 @@
   <component name="NewModuleRootManager">
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="misc" />
+    <orderEntry type="library" name="Python 3.8 interpreter library" level="application" />
   </component>
 </module>
