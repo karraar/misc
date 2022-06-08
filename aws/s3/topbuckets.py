@@ -12,7 +12,7 @@ def list_s3_objects(bucket):
     """List all keys in an S3 bucket and return a pandas dataframe"""
 
     objects = []
-    for page in s3.get_paginator('list_objects_v2').paginate(bucket=bucket):
+    for page in s3.get_paginator('list_objects_v2').paginate(Bucket=bucket):
         if 'Contents' in page:
             for obj in page['Contents']:
                 obj['level0'] = '/'
