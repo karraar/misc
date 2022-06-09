@@ -35,7 +35,6 @@ def agg_bucket_level(df, level_col, level):
              max_last_modified=('LastModified', 'max')
              )
     level_df['level'] = level
-    level_df.rename(columns={level_col: 'prefix'})
     level_df['num_objects_k'] = level_df['num_objects'].map(lambda x: '{:,}'.format(int(x / 1000)))
     level_df['size_k'] = level_df['size'].map(lambda x: '{:,}'.format(int(x / 1024 / 1024 / 1024)))
     level_df['prefix'] = level_df[level_col]
@@ -53,16 +52,17 @@ def print_bucket_stats(df):
 
 def get_s3_bucket_size(bucket):
     now = datetime.datetime.now()
-    sizes = cw.get_metric_statistics(Namespace='AWS/S3',
-                                     MetricName='BucketSizeBytes',
-                                     Dimensions=[{'Name': 'BucketName', 'Value': bucket},
-                                                 {'Name': 'StorageType', 'Value': 'StandardStorage'}],
-                                     Statistics=['Average'],
-                                     Period=3600,
-                                     StartTime=(now - datetime.timedelta(days=2)).isoformat(),
-                                     EndTime=now.isoformat())['Datapoints']
+    size = cw.get_metric_statistics(Namespace='AWS/S3',
+                                    MetricName='BucketSizeBytes',
+                                    Dimensions=[{'Name': 'BucketName', 'Value': bucket},
+                                                {'Name': 'StorageType', 'Value': 'StandardStorage'}],
+                                    Statistics=['Average'],
+                                    Period=3600,
+                                    StartTime=(now - datetime.timedelta(days=2)).isoformat(),
+                                    EndTime=now.isoformat()
+                                   )['Datapoints'][0]['Average']
 
-    return int(sizes[0]['Average']) if len(sizes) > 0 else 0
+    return int(size) if len(size) > 0 else 0
 
 
 def get_s3_bucket_num_objects(bucket):
@@ -74,9 +74,10 @@ def get_s3_bucket_num_objects(bucket):
                                  Statistics=['Average'],
                                  Period=3600,
                                  StartTime=(now - datetime.timedelta(days=2)).isoformat(),
-                                 EndTime=now.isoformat())['Datapoints']
+                                 EndTime=now.isoformat()
+                                )['Datapoints'][0]['Average']
 
-    return int(n[0]['Average']) if len(n) > 0 else 0
+    return int(n) if len(n) > 0 else 0
 
 
 def get_s3_buckets_stats():
@@ -126,18 +127,15 @@ def get_options():
             'buckets_limit': 10,
             'buckets_details_limit': 1}
     try:
-        opts, args = getopt.getopt(sys.argv[1:],
-                                   "hr:l:d:",
-                                   ["help",
-                                    "region=",
-                                    "limit=",
-                                    "details_limit="])
+        optlist, args = getopt.getopt(sys.argv[1:],
+                                      "hr:l:d:",
+                                      ["help", "region=", "limit=", "details_limit="])
     except getopt.GetoptError as err:
         print("Got Getopt Error: " + str(err))
         usage()
         sys.exit(2)
 
-    for opt, arg in opts:
+    for opt, arg in optlist:
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
