@@ -45,24 +45,24 @@ def print_bucket_stats(df):
     bucket_summary_df = pd.concat([agg_bucket_level(df, 'level0', 0),
                                    agg_bucket_level(df, 'level1', 1),
                                    agg_bucket_level(df, 'level2', 2)]) \
-        [['level', 'size_k', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
+                          [['level', 'size_k', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
 
-    print(tabulate(bucket_summary_df, headers='keys', tablefmt='psql'))
+    print(tabulate(bucket_summary_df, headers='keys', tablefmt='psql', showindex=False))
 
 
 def get_s3_bucket_size(bucket):
     now = datetime.datetime.now()
-    size = cw.get_metric_statistics(Namespace='AWS/S3',
-                                    MetricName='BucketSizeBytes',
-                                    Dimensions=[{'Name': 'BucketName', 'Value': bucket},
-                                                {'Name': 'StorageType', 'Value': 'StandardStorage'}],
-                                    Statistics=['Average'],
-                                    Period=3600,
-                                    StartTime=(now - datetime.timedelta(days=2)).isoformat(),
-                                    EndTime=now.isoformat()
-                                   )['Datapoints'][0]['Average']
+    sizes = cw.get_metric_statistics(Namespace='AWS/S3',
+                                     MetricName='BucketSizeBytes',
+                                     Dimensions=[{'Name': 'BucketName', 'Value': bucket},
+                                                 {'Name': 'StorageType', 'Value': 'StandardStorage'}],
+                                     Statistics=['Average'],
+                                     Period=3600,
+                                     StartTime=(now - datetime.timedelta(days=2)).isoformat(),
+                                     EndTime=now.isoformat()
+                                    )['Datapoints']
 
-    return int(size) if len(size) > 0 else 0
+    return int(sizes[0]['Average']) if len(sizes[0]['Average']) > 0 else 0
 
 
 def get_s3_bucket_num_objects(bucket):
@@ -75,9 +75,9 @@ def get_s3_bucket_num_objects(bucket):
                                  Period=3600,
                                  StartTime=(now - datetime.timedelta(days=2)).isoformat(),
                                  EndTime=now.isoformat()
-                                )['Datapoints'][0]['Average']
+                                )['Datapoints']
 
-    return int(n) if len(n) > 0 else 0
+    return int(n[0]['Average']) if len(n[0]['Average']) > 0 else 0
 
 
 def get_s3_buckets_stats():
