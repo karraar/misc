@@ -28,7 +28,7 @@ def list_s3_objects(bucket):
 def agg_bucket_level(df, level_col, level):
     """Aggregate bucket stats at level column"""
 
-    level_df = df.groupby(level_col) \
+    level_df = df.groupby(level_col, as_index=False) \
         .agg(num_objects=('Size', 'count'),
              size=('Size', 'sum'),
              min_last_modified=('LastModified', 'min'),
