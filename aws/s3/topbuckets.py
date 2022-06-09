@@ -29,26 +29,25 @@ def agg_bucket_level(df, level_col, level):
     """Aggregate bucket stats at level column"""
 
     level_df = df.groupby(level_col) \
-        .agg({'Size': ['count', 'sum'],
-              'LastModified': ['min', 'max']}
+        .agg(num_objects=('Size', 'count'),
+             size=('Size', 'sum'),
+             min_last_modified=('LastModified', 'min'),
+             max_last_modified=('LastModified', 'max')
              )
     level_df['level'] = level
     level_df.rename(columns={level_col: 'prefix'})
-    level_df.columns = ['level', 'num_objects', 'size', 'minLastModified', 'maxLastModified']
     level_df['num_objects_k'] = level_df['num_objects'].map(lambda x: '{:,}'.format(int(x / 1000)))
     level_df['size_k'] = level_df['size'].map(lambda x: '{:,}'.format(int(x / 1024 / 1024 / 1024)))
-    return level_df
+    level_df['prefix'] = level_df[level_col]
+    return level_df.sort_values(['size', 'num_objects']).head(5)
 
 
 def print_bucket_stats(df):
-    level0_df = agg_bucket_level(df, 'level0', 0)
-    level1_df = agg_bucket_level(df, 'level1', 1)
-    level2_df = agg_bucket_level(df, 'level2', 2)
+    bucket_summary_df = pd.concat([agg_bucket_level(df, 'level0', 0),
+                                   agg_bucket_level(df, 'level1', 1),
+                                   agg_bucket_level(df, 'level2', 2)]) \
+        [['level', 'size_k', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
 
-    bucket_summary_df = pd.concat([level0_df, level1_df, level2_df], ignore_index=True)
-    bucket_summary_df = bucket_summary_df.sort_values(['level', 'size', 'num_objects'], ascending=False)
-    del bucket_summary_df['size']
-    del bucket_summary_df['num_objects']
     print(tabulate(bucket_summary_df, headers='keys', tablefmt='psql'))
 
 
@@ -85,9 +84,8 @@ def get_s3_buckets_stats():
 
     buckets_stats = {}
     for bucket in s3.list_buckets()['Buckets']:
-        size = get_s3_bucket_size(bucket['Name'])
-        num_objects = get_s3_bucket_num_objects(bucket['Name'])
-        buckets_stats[bucket['Name']] = [size, num_objects]
+        buckets_stats[bucket['Name']] = [get_s3_bucket_size(bucket['Name']),
+                                         get_s3_bucket_num_objects(bucket['Name'])]
 
     return buckets_stats
 
@@ -123,8 +121,10 @@ def usage():
     print("\t\t\t\t## Optional: The number of buckets to print details for. Default: 1")
 
 
-if __name__ == "__main__":
-    options = {'region': 'us-east-1', 'buckets_limit': 10, 'buckets_details_limit': 1}
+def get_options():
+    opts = {'region': 'us-east-1',
+            'buckets_limit': 10,
+            'buckets_details_limit': 1}
     try:
         opts, args = getopt.getopt(sys.argv[1:],
                                    "hr:l:d:",
@@ -142,12 +142,17 @@ if __name__ == "__main__":
             usage()
             sys.exit()
         elif opt in ("-r", "--region"):
-            options['region'] = arg
+            opts['region'] = arg
         elif opt in ("-l", "--limit"):
-            options['buckets_limit'] = int(arg)
+            opts['buckets_limit'] = int(arg)
         elif opt in ("-d", "--details_limit"):
-            options['buckets_details_limit'] = int(arg)
+            opts['buckets_details_limit'] = int(arg)
 
+    return opts
+
+
+if __name__ == "__main__":
+    options = get_options()
     cw = boto3.client('cloudwatch', options['region'])
     s3 = boto3.client('s3', options['region'])
     print_top_s3_buckets(options['buckets_limit'], options['buckets_details_limit'])
