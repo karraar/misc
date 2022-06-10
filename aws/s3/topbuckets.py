@@ -36,16 +36,16 @@ def agg_bucket_level(df, level_col, level):
              )
     level_df['level'] = level
     level_df['num_objects_k'] = level_df['num_objects'].map(lambda x: '{:,}'.format(int(x / 1000)))
-    level_df['size_k'] = level_df['size'].map(lambda x: '{:,}'.format(int(x / 1024 / 1024 / 1024)))
+    level_df['size_gb'] = level_df['size'].map(lambda x: '{:,}'.format(int(x / 1024 / 1024 / 1024)))
     level_df['prefix'] = level_df[level_col]
-    return level_df.sort_values(['size', 'num_objects']).head(5)
+    return level_df.sort_values(['size', 'num_objects'], ascending=False).head(5)
 
 
 def print_bucket_stats(df):
     bucket_summary_df = pd.concat([agg_bucket_level(df, 'level0', 0),
                                    agg_bucket_level(df, 'level1', 1),
                                    agg_bucket_level(df, 'level2', 2)]) \
-                          [['level', 'size_k', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
+                          [['level', 'size_gb', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
 
     print(tabulate(bucket_summary_df, headers='keys', tablefmt='psql', showindex=False))
 
@@ -62,7 +62,7 @@ def get_s3_bucket_size(bucket):
                                      EndTime=now.isoformat()
                                     )['Datapoints']
 
-    return int(sizes[0]['Average']) if len(sizes[0]['Average']) > 0 else 0
+    return int(sizes[0]['Average']) if len(sizes) > 0 else 0
 
 
 def get_s3_bucket_num_objects(bucket):
@@ -77,7 +77,7 @@ def get_s3_bucket_num_objects(bucket):
                                  EndTime=now.isoformat()
                                 )['Datapoints']
 
-    return int(n[0]['Average']) if len(n[0]['Average']) > 0 else 0
+    return int(n[0]['Average']) if len(n) > 0 else 0
 
 
 def get_s3_buckets_stats():
