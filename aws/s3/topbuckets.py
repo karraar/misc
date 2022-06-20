@@ -41,10 +41,12 @@ def agg_bucket_level(df, level_col, level):
     return level_df.sort_values(['size', 'num_objects'], ascending=False).head(5)
 
 
-def print_bucket_stats(df):
-    bucket_summary_df = pd.concat([agg_bucket_level(df, 'level0', 0),
-                                   agg_bucket_level(df, 'level1', 1),
-                                   agg_bucket_level(df, 'level2', 2)]) \
+def print_bucket_stats(df, max_levels_in_details=3):
+    level_details = []
+    for lvl in range(0, max_levels_in_details):
+        level_details.append(agg_bucket_level(df, 'level' + lvl, lvl))
+
+    bucket_summary_df = pd.concat(level_details) \
                           [['level', 'size_gb', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
 
     print(tabulate(bucket_summary_df, headers='keys', tablefmt='psql', showindex=False))
@@ -91,45 +93,52 @@ def get_s3_buckets_stats():
     return buckets_stats
 
 
-def get_top_s3_buckets(buckets_limit):
+def get_top_s3_buckets(max_buckets):
     s3_buckets_stats = get_s3_buckets_stats()
-    return sorted(s3_buckets_stats.items(), key=lambda item: item[1], reverse=True)[0:buckets_limit]
+    return sorted(s3_buckets_stats.items(), key=lambda item: item[1], reverse=True)[0:max_buckets]
 
 
-def print_top_s3_buckets(buckets_limit, buckets_details_limit):
-    print("Top {} Buckets by Size:".format(buckets_limit))
+def print_top_s3_buckets(max_buckets, max_buckets_with_details, max_levels_in_details):
+    print("Top {} Buckets by Size:".format(max_buckets))
     print("{:<60s}{:>30s}{:>30s}".format('Bucket', 'Avg[2 days] Size (GB)', 'Avg[2 days] # Objects (k)'))
 
     detail = 1
-    for b in get_top_s3_buckets(buckets_limit):
+    for b in get_top_s3_buckets(max_buckets):
         bucket = b[0]
-        size = int(b[1][0] / 1024 / 1024 / 1024)
-        objects = int(b[1][1] / 1000)
-        print("{:<60s}{:>30,d}{:>30,d}".format(bucket, size, objects))
-        while detail <= buckets_details_limit:
-            if objects > 0:
-                print_bucket_stats(list_s3_objects(b[0]))
+        size_gb = int(b[1][0] / 1024 / 1024 / 1024)
+        num_objects = int(b[1][1] / 1000)
+        print("{:<60s}{:>30,d}{:>30,d}".format(bucket, size_gb, num_objects))
+        while detail <= max_buckets_with_details:
+            if num_objects > 0:
+                print_bucket_stats(list_s3_objects(b[0]), max_levels_in_details)
             detail = detail + 1
 
 
 def usage():
     print("Usage: {} [OPTIONS]".format(sys.argv[0]))
     print("\t-r, --region=<region>")
-    print("\t\t\t\t## Optional: The AWS Region to use. Default: us-east-1")
-    print("\t--limit=<buckets-limit>")
-    print("\t\t\t\t## Optional: The number of top buckets to print. Default: 10")
-    print("\t--details_limit=<buckets-details-limit>")
-    print("\t\t\t\t## Optional: The number of buckets to print details for. Default: 1")
+    print("\t\t## Optional<Default: us-east-1>: The AWS Region to use.")
+    print("\t-m, --max_buckets=<max_buckets>")
+    print("\t\t## Optional<Default: 10>: The number of top buckets to print.")
+    print("\t-d, --max_buckets_with_details=<max_buckets_with_details>")
+    print("\t\t## Optional<Default: 1>: The number of buckets to print with details.")
+    print("\t-l, --max_levels_in_details=<max_levels_in_details>")
+    print("\t\t## Optional<Default: 3>: The number of levels to print in detailed buckets report.")
 
 
 def get_options():
     opts = {'region': 'us-east-1',
-            'buckets_limit': 10,
-            'buckets_details_limit': 1}
+            'max_buckets': 10,
+            'max_buckets_with_details': 1,
+            'max_levels_in_details': 3}
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
-                                      "hr:l:d:",
-                                      ["help", "region=", "limit=", "details_limit="])
+                                      "hr:m:d:l:",
+                                      ["help",
+                                       "region=",
+                                       "max_buckets=",
+                                       "max_buckets_with_details=",
+                                       "max_levels_in_details="])
     except getopt.GetoptError as err:
         print("Got Getopt Error: " + str(err))
         usage()
@@ -141,10 +150,12 @@ def get_options():
             sys.exit()
         elif opt in ("-r", "--region"):
             opts['region'] = arg
-        elif opt in ("-l", "--limit"):
-            opts['buckets_limit'] = int(arg)
-        elif opt in ("-d", "--details_limit"):
-            opts['buckets_details_limit'] = int(arg)
+        elif opt in ("-m", "--max_buckets"):
+            opts['max_buckets'] = int(arg)
+        elif opt in ("-d", "--max_buckets_with_details"):
+            opts['max_buckets_with_details'] = int(arg)
+        elif opt in ("-l", "--max_levels_in_details"):
+            opts['max_levels_in_details'] = int(arg)
 
     return opts
 
@@ -153,4 +164,6 @@ if __name__ == "__main__":
     options = get_options()
     cw = boto3.client('cloudwatch', options['region'])
     s3 = boto3.client('s3', options['region'])
-    print_top_s3_buckets(options['buckets_limit'], options['buckets_details_limit'])
+    print_top_s3_buckets(options['max_buckets'],
+                         options['max_buckets_with_details'],
+                         options['max_levels_in_details'])
