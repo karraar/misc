@@ -20,7 +20,7 @@ def list_s3_objects(bucket, max_levels_in_details):
                'level1': '/' + o.key.split('/')[0]
                }
         for lvl in range(2, max_levels_in_details):
-            obj['level' + str(lvl)] = '/' + o.key.split('/')[0:lvl]
+            obj['level' + str(lvl)] = '/' + '/'.join(o.key.split('/')[0:lvl])
         objects.append(obj)
 
     return pd.DataFrame(objects)
@@ -92,8 +92,9 @@ def get_s3_buckets_stats():
 
     buckets_stats = {}
     for bucket in s3.buckets.all():
-        buckets_stats[bucket['Name']] = [get_s3_bucket_size(bucket['Name']),
-                                         get_s3_bucket_num_objects(bucket['Name'])]
+        bucket.
+        buckets_stats[bucket.name] = [get_s3_bucket_size(bucket.name),
+                                      get_s3_bucket_num_objects(bucket.name)]
 
     return buckets_stats
 
