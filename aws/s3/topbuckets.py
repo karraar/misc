@@ -6,6 +6,7 @@ import datetime
 import pandas as pd
 from tabulate import tabulate
 import getopt
+import humanize
 
 
 def list_s3_objects(bucket, max_levels_in_details):
@@ -36,8 +37,8 @@ def agg_bucket_level(df, level_col, level):
              max_last_modified=('LastModified', 'max')
              )
     level_df['level'] = level
-    level_df['num_objects_k'] = level_df['num_objects'].map(lambda x: '{:,}'.format(int(x / 1000)))
-    level_df['size_gb'] = level_df['size'].map(lambda x: '{:,}'.format(int(x / 1024 / 1024 / 1024)))
+    level_df['objects'] = level_df['num_objects'].map(lambda x: humanize.intword(x))
+    level_df['sizes'] = level_df['size'].map(lambda x: humanize.naturalsize(x, False, True, '%8.1f'))
     level_df['prefix'] = level_df[level_col]
     return level_df.sort_values(['size', 'num_objects'], ascending=False).head(5)
 
@@ -92,7 +93,6 @@ def get_s3_buckets_stats():
 
     buckets_stats = {}
     for bucket in s3.buckets.all():
-        bucket.
         buckets_stats[bucket.name] = [get_s3_bucket_size(bucket.name),
                                       get_s3_bucket_num_objects(bucket.name)]
 
@@ -116,7 +116,7 @@ def print_top_s3_buckets(max_buckets, max_buckets_with_details, max_levels_in_de
         size_gb = int(b[1][0] / 1024 / 1024 / 1024)
         num_objects = int(b[1][1] / 1000)
         print("{:<60s}{:>30,d}{:>30,d}".format(bucket, size_gb, num_objects))
-        while detail <= max_buckets_with_details:
+        if detail <= max_buckets_with_details:
             if num_objects > 0:
                 print_bucket_stats(list_s3_objects(b[0], max_levels_in_details), max_levels_in_details)
             detail = detail + 1
