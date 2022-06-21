@@ -8,19 +8,20 @@ from tabulate import tabulate
 import getopt
 
 
-def list_s3_objects(bucket):
+def list_s3_objects(bucket, max_levels_in_details):
     """List all keys in an S3 bucket and return a pandas dataframe"""
 
     objects = []
-    for page in s3.get_paginator('list_objects_v2').paginate(Bucket=bucket):
-        if 'Contents' in page:
-            for obj in page['Contents']:
-                obj['level0'] = '/'
-                obj['level1'] = '/' + obj['Key'].split('/')[0]
-                obj['level2'] = '/' + '/'.join(obj['Key'].split('/')[0:2])
-                del obj['Key']
-                del obj['ETag']
-                objects.append(obj)
+    for o in s3.Bucket(bucket).objects.all():
+        obj = {'Key': o.key,
+               'LastModified': o.last_modified,
+               'Size': o.size,
+               'level0': '/',
+               'level1': '/' + o.key.split('/')[0]
+               }
+        for lvl in range(2, max_levels_in_details):
+            obj['level' + str(lvl)] = '/' + o.key.split('/')[0:lvl]
+        objects.append(obj)
 
     return pd.DataFrame(objects)
 
@@ -41,13 +42,17 @@ def agg_bucket_level(df, level_col, level):
     return level_df.sort_values(['size', 'num_objects'], ascending=False).head(5)
 
 
-def print_bucket_stats(df, max_levels_in_details=3):
+def print_bucket_stats(df, max_levels_in_details):
     level_details = []
     for lvl in range(0, max_levels_in_details):
-        level_details.append(agg_bucket_level(df, 'level' + lvl, lvl))
+        level_details.append(agg_bucket_level(df, 'level' + str(lvl), lvl))
 
-    bucket_summary_df = pd.concat(level_details) \
-                          [['level', 'size_gb', 'num_objects_k', 'min_last_modified', 'max_last_modified', 'prefix']]
+    bucket_summary_df = pd.concat(level_details)[['level',
+                                                  'size_gb',
+                                                  'num_objects_k',
+                                                  'min_last_modified',
+                                                  'max_last_modified',
+                                                  'prefix']]
 
     print(tabulate(bucket_summary_df, headers='keys', tablefmt='psql', showindex=False))
 
@@ -62,7 +67,7 @@ def get_s3_bucket_size(bucket):
                                      Period=3600,
                                      StartTime=(now - datetime.timedelta(days=2)).isoformat(),
                                      EndTime=now.isoformat()
-                                    )['Datapoints']
+                                     )['Datapoints']
 
     return int(sizes[0]['Average']) if len(sizes) > 0 else 0
 
@@ -77,7 +82,7 @@ def get_s3_bucket_num_objects(bucket):
                                  Period=3600,
                                  StartTime=(now - datetime.timedelta(days=2)).isoformat(),
                                  EndTime=now.isoformat()
-                                )['Datapoints']
+                                 )['Datapoints']
 
     return int(n[0]['Average']) if len(n) > 0 else 0
 
@@ -86,7 +91,7 @@ def get_s3_buckets_stats():
     """Iterate through each bucket"""
 
     buckets_stats = {}
-    for bucket in s3.list_buckets()['Buckets']:
+    for bucket in s3.buckets.all():
         buckets_stats[bucket['Name']] = [get_s3_bucket_size(bucket['Name']),
                                          get_s3_bucket_num_objects(bucket['Name'])]
 
@@ -95,7 +100,9 @@ def get_s3_buckets_stats():
 
 def get_top_s3_buckets(max_buckets):
     s3_buckets_stats = get_s3_buckets_stats()
-    return sorted(s3_buckets_stats.items(), key=lambda item: item[1], reverse=True)[0:max_buckets]
+    return sorted(s3_buckets_stats.items(),
+                  key=lambda item: item[1],
+                  reverse=True)[0:max_buckets]
 
 
 def print_top_s3_buckets(max_buckets, max_buckets_with_details, max_levels_in_details):
@@ -110,7 +117,7 @@ def print_top_s3_buckets(max_buckets, max_buckets_with_details, max_levels_in_de
         print("{:<60s}{:>30,d}{:>30,d}".format(bucket, size_gb, num_objects))
         while detail <= max_buckets_with_details:
             if num_objects > 0:
-                print_bucket_stats(list_s3_objects(b[0]), max_levels_in_details)
+                print_bucket_stats(list_s3_objects(b[0], max_levels_in_details), max_levels_in_details)
             detail = detail + 1
 
 
@@ -163,7 +170,7 @@ def get_options():
 if __name__ == "__main__":
     options = get_options()
     cw = boto3.client('cloudwatch', options['region'])
-    s3 = boto3.client('s3', options['region'])
+    s3 = boto3.resource('s3', options['region'])
     print_top_s3_buckets(options['max_buckets'],
                          options['max_buckets_with_details'],
                          options['max_levels_in_details'])
