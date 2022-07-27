@@ -9,7 +9,7 @@ SYSTEM_SHAPES = {'s3': {'shape': 'folder', 'color': 'orange'},
                  'fivetran': {'shape': 'tripleoctagon', 'color': 'lime'},
                  'redshift': {'shape': 'cylinder', 'color': 'thistle'},
                  'redshift-external': {'shape': 'invhouse', 'color': 'yellow'},
-                 'default': {'shape': 'oval', 'color': 'turquoise'}
+                 'default': {'shape': 'box', 'color': 'gray'}
                  }
 
 
@@ -26,17 +26,17 @@ def html_newline():
 
 
 def format_label(s):
-    parts = s.split('|')
+    parts = s.split('.')
     if len(parts) >= 3:
         return '<{0}{1}{2}{3}{4}>'.format(html_underline(html_bold(parts[0].capitlaize())),
                                           html_newline(),
                                           html_bold(parts[1]),
                                           html_newline(),
-                                          '|'.join(parts[2:]))
+                                          '.'.join(parts[2:]))
     elif len(parts) == 2:
         return '<{0}{1}{2}>'.format(html_underline(html_bold(parts[0].capitalize())),
                                     html_newline(),
-                                    '|'.join(parts[1:]))
+                                    '.'.join(parts[1:]))
     else:
         return s
 
@@ -57,6 +57,9 @@ class DigraphLineage(object):
 
     def add_node(self, system, label):
         node = DigraphNode(system, label)
+        if system not in SYSTEM_SHAPES:
+            system = 'default'
+
         if node.name not in self.nodes:
             self.nodes.append(node.name)
             self.digraph.node(name=node.name,

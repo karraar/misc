@@ -1,6 +1,6 @@
 { "mappings":
   [
-    {"source": {"system": "s3", "label": "source_label"},
+    {"source": {"system": "x3", "label": "source_label"},
      "dest": {"system": "fivetran", "label": "dest_label"},
      "edge": {"label": "edge_label"}
     }
